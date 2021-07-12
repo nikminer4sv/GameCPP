@@ -6,18 +6,21 @@
 using namespace std;
 using namespace sf;
 
-Texture GrassTileset;
+Texture GroundTileset;
 Sprite GrassSprite;
+Sprite RoadSprite;
 
 const int WINDOW_WIDTH = 512;
 const int WINDOW_HEIGHT = 512;
 const int TEXTURE_SIZE = 32;
 const string WINDOW_TITLE = "TITLE";
 const string TEXTURES_PATH = "source/textures/";
+const bool isGenerator = true;
 
 
 enum CellType {
-    GRASS
+    GRASS,
+    ROAD
 };
 
 class Position2D {
@@ -79,6 +82,8 @@ public:
 
         if (type == GRASS) {
             sprite = GrassSprite;
+        } else if (type == ROAD) {
+            sprite = RoadSprite;
         }
 
         sprite.setPosition(0,0);
@@ -95,6 +100,20 @@ public:
 
     Sprite GetSprite() {
         return sprite;
+    }
+    
+    void ChangeCell(Sprite sprite, CellType type) {
+        sprite.setPosition(position.GetX(), position.GetY());
+        SetSprite(sprite);
+        SetType(type);
+    }
+
+    void SetSprite(Sprite sprite) {
+        this->sprite = sprite;
+    }
+
+    void SetType(CellType type) {
+        this->type = type;
     }
 
 };
@@ -115,9 +134,13 @@ vector<vector<Cell>> CreateGameField() {
 
 void LoadSource() {
 
-    GrassTileset.loadFromFile(TEXTURES_PATH + "Grass-tileset.png");
-    GrassSprite.setTexture(GrassTileset);
-    GrassSprite.setTextureRect(IntRect(0,192,32,32));
+    GroundTileset.loadFromFile(TEXTURES_PATH + "GroundTileset.png");
+
+    GrassSprite.setTexture(GroundTileset);
+    RoadSprite.setTexture(GroundTileset);
+
+    GrassSprite.setTextureRect(IntRect(0,0,32,32));
+    RoadSprite.setTextureRect(IntRect(0,192,32,32));
 
 }
 
@@ -143,7 +166,19 @@ int main() {
 
         }
 
-        window.clear(Color::White);
+        if (isGenerator) {
+            if (Mouse::isButtonPressed(Mouse::Left)) {
+                if (Mouse::getPosition(window).x >= 0 && 
+                    Mouse::getPosition(window).x <= WINDOW_WIDTH && 
+                    Mouse::getPosition(window).y >= 0 && 
+                    Mouse::getPosition(window).y <= WINDOW_HEIGHT) {
+                    int col, row;
+                    col = Mouse::getPosition(window).x / TEXTURE_SIZE;
+                    row = Mouse::getPosition(window).y / TEXTURE_SIZE;
+                    GameField[row][col].ChangeCell(RoadSprite, ROAD);         
+                }
+            }
+        }
 
         for (int i = 0; i < WINDOW_HEIGHT / TEXTURE_SIZE; i++) {
             for (int j = 0; j < WINDOW_WIDTH / TEXTURE_SIZE; j++) {
