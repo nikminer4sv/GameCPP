@@ -2,15 +2,19 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
+#include <stdlib.h>
+#include <ctime>
 
 using namespace std;
 using namespace sf;
 
+Texture CharacterTileset;
+Sprite CharacterSprite;
 Texture GroundTileset;
-Sprite GrassSprite;
 Sprite RoadSprite;
+vector<Sprite> GrassSprites(32);
 
-const int WINDOW_WIDTH = 512;
+const int WINDOW_WIDTH = 640;
 const int WINDOW_HEIGHT = 512;
 const int TEXTURE_SIZE = 32;
 const string WINDOW_TITLE = "TITLE";
@@ -72,7 +76,7 @@ private:
 public:
     Cell() {
         type = GRASS;
-        sprite = GrassSprite;
+        sprite = GrassSprites[0];
         sprite.setPosition(0,0);
     }
 
@@ -81,7 +85,7 @@ public:
         this->type = type;
 
         if (type == GRASS) {
-            sprite = GrassSprite;
+            sprite = GrassSprites[0];
         } else if (type == ROAD) {
             sprite = RoadSprite;
         }
@@ -132,23 +136,76 @@ vector<vector<Cell>> CreateGameField() {
 
 }
 
-void LoadSource() {
+void LoadSource(vector<Sprite>& GrassSprites) {
 
     GroundTileset.loadFromFile(TEXTURES_PATH + "GroundTileset.png");
 
-    GrassSprite.setTexture(GroundTileset);
-    RoadSprite.setTexture(GroundTileset);
+    for (int i = 0; i < 32; i++) {
+        GrassSprites[i].setTexture(GroundTileset);
+        GrassSprites[i].setTextureRect(IntRect((i % 8)*TEXTURE_SIZE,(i / 8)*TEXTURE_SIZE,32,32));
+    }
 
-    GrassSprite.setTextureRect(IntRect(0,0,32,32));
-    RoadSprite.setTextureRect(IntRect(0,192,32,32));
+    RoadSprite.setTexture(GroundTileset);
+    RoadSprite.setTextureRect(IntRect(0,128,32,32));
+
+    // Character
+
+    CharacterTileset.loadFromFile(TEXTURES_PATH + "Character.png");
+
+    CharacterSprite.setTexture(CharacterTileset);
+    CharacterSprite.setTextureRect(IntRect(0,0,32,32));
+    CharacterSprite.scale(2,2);
 
 }
 
+class Character {
+private:
+    Sprite sprite;
+    Position2D position;
+    int health = 100;
+
+public:
+    Character() {}
+
+    Character(Sprite spritearg, Position2D positionarg):position(positionarg), sprite(spritearg) {
+        sprite.setPosition(position.GetX(), position.GetY());
+    }
+
+    Sprite GetSprite() {
+        return sprite;
+    }
+
+};
+
+int GetRandomNumber(int min, int max) {
+
+    static const double fraction = 1.0 / (static_cast<double>(RAND_MAX) + 1.0); 
+    return static_cast<int>(rand() * fraction * (max - min + 1) + min);
+
+}
+
+vector<vector<Cell>> DefaultMap() {
+
+    vector<vector<Cell>> GameField(WINDOW_HEIGHT / TEXTURE_SIZE, vector<Cell>(WINDOW_WIDTH / TEXTURE_SIZE, Cell(GRASS)));
+
+    for (int i = 0; i < WINDOW_HEIGHT / TEXTURE_SIZE; i++) {
+        for (int j = 0; j < WINDOW_WIDTH / TEXTURE_SIZE; j++) {
+            int rnumber = GetRandomNumber(0,31);
+            GameField[i][j].ChangeCell(GrassSprites[rnumber], GRASS);
+            GameField[i][j].SetPosition(j * TEXTURE_SIZE, i * TEXTURE_SIZE);
+        }
+    }
+
+    return GameField;
+
+}
 
 int main() {
 
-    LoadSource();
-    vector<vector<Cell>> GameField = CreateGameField();
+    srand(static_cast<unsigned int>(time(0)));
+    LoadSource(GrassSprites);
+    vector<vector<Cell>> GameField = DefaultMap();
+    Character character(CharacterSprite, Position2D(WINDOW_WIDTH/2 - 32, WINDOW_HEIGHT/2 - 32));
 
     RenderWindow window(VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), WINDOW_TITLE);
 
@@ -182,9 +239,11 @@ int main() {
 
         for (int i = 0; i < WINDOW_HEIGHT / TEXTURE_SIZE; i++) {
             for (int j = 0; j < WINDOW_WIDTH / TEXTURE_SIZE; j++) {
-                window.draw(GameField[j][i].GetSprite());
+                window.draw(GameField[i][j].GetSprite());
             }
         }
+
+        window.draw(character.GetSprite());
 
         window.display();
 
