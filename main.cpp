@@ -341,7 +341,7 @@ int main() {
     View CharacterView(FloatRect(560.f, 315.f, VIEW_WIDTH, VIEW_HEIGHT));
 
     RenderWindow window(VideoMode(1920, 1080), WINDOW_TITLE, Style::Fullscreen);
-    window.setFramerateLimit(60);
+    window.setVerticalSyncEnabled(true);
     window.setView(CharacterView);
 
     int current_road_type = 0;  
@@ -451,15 +451,10 @@ int main() {
 
         if (isGenerator) {
             if (Mouse::isButtonPressed(Mouse::Left)) {
-                if (Mouse::getPosition(window).x >= 0 && 
-                    Mouse::getPosition(window).x <= WINDOW_WIDTH && 
-                    Mouse::getPosition(window).y >= 0 && 
-                    Mouse::getPosition(window).y <= WINDOW_HEIGHT) {
-                    int col, row;
-                    col = Mouse::getPosition(window).x / TEXTURE_SIZE;
-                    row = Mouse::getPosition(window).y / TEXTURE_SIZE;
-                    GameField[row][col].ChangeCell(RoadSprites[current_road_type], ROAD);         
-                }
+                int col, row;
+                col = window.mapPixelToCoords(Mouse::getPosition(window)).x / TEXTURE_SIZE;
+                row = window.mapPixelToCoords(Mouse::getPosition(window)).y / TEXTURE_SIZE;
+                GameField[row][col].ChangeCell(RoadSprites[current_road_type], ROAD);         
             }
         }
 
