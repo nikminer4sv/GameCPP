@@ -15,10 +15,11 @@ vector<Sprite> GrassSprites(32);
 vector<Sprite> RoadSprites(32);
 
 const int WINDOW_WIDTH = 1920;
-const int WINDOW_HEIGHT = 1088;
+const int WINDOW_HEIGHT = 1080;
 const int VIEW_WIDTH = 850;
 const int VIEW_HEIGHT = 450;
-const int WORLD_WIDTH = 50;
+const int WORLD_WIDTH = 30;
+const int WORLD_HEIGHT = 30;
 const int TEXTURE_SIZE = 32;
 const int CHARACTER_SIZE = 32;
 const int CHARACTER_SCALE_FACTOR = 2;
@@ -317,10 +318,10 @@ int GetRandomNumber(int min, int max) {
 
 vector<vector<Cell>> DefaultMap() {
 
-    vector<vector<Cell>> GameField(WINDOW_HEIGHT / TEXTURE_SIZE, vector<Cell>(WINDOW_WIDTH / TEXTURE_SIZE, Cell(GRASS)));
+    vector<vector<Cell>> GameField(WORLD_HEIGHT, vector<Cell>(WORLD_WIDTH, Cell()));
 
-    for (int i = 0; i < WINDOW_HEIGHT / TEXTURE_SIZE; i++) {
-        for (int j = 0; j < WINDOW_WIDTH / TEXTURE_SIZE; j++) {
+    for (int i = 0; i < WORLD_HEIGHT; i++) {
+        for (int j = 0; j < WORLD_WIDTH; j++) {
             int rnumber = GetRandomNumber(0,31);
             GameField[i][j].ChangeCell(GrassSprites[rnumber], GRASS);
             GameField[i][j].SetPosition(j * TEXTURE_SIZE, i * TEXTURE_SIZE);
@@ -336,13 +337,16 @@ int main() {
     srand(static_cast<unsigned int>(time(0)));
     LoadSource();
     vector<vector<Cell>> GameField = DefaultMap();
-    Character character(CharacterSprite, Position2D(static_cast<float>(WINDOW_WIDTH/2 - 32), static_cast<float>(WINDOW_HEIGHT/2 - 32)));
+    Character character(CharacterSprite, Position2D(static_cast<float>(WORLD_WIDTH*TEXTURE_SIZE/2 - 32), static_cast<float>(WORLD_HEIGHT*TEXTURE_SIZE/2 - 32)));
     Animation CharacterAnimation(character.GetSprite(), 0.07f, Vector2u(10,10));
-    View CharacterView(FloatRect(560.f, 315.f, VIEW_WIDTH, VIEW_HEIGHT));
+    View CharacterView(FloatRect((WORLD_WIDTH*TEXTURE_SIZE-VIEW_WIDTH)/2, (WORLD_HEIGHT*TEXTURE_SIZE-VIEW_HEIGHT)/2, VIEW_WIDTH, VIEW_HEIGHT));
 
-    RenderWindow window(VideoMode(1920, 1080), WINDOW_TITLE, Style::Fullscreen);
+    RenderWindow window(VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), WINDOW_TITLE, Style::Fullscreen);
     window.setVerticalSyncEnabled(true);
     window.setView(CharacterView);
+    Image icon;
+    icon.loadFromFile("source/icons/GameIcon.png");
+    window.setIcon(512,512,icon.getPixelsPtr());
 
     int current_road_type = 0;  
     float deltaTime = 0.0f;
@@ -359,7 +363,7 @@ int main() {
 
         while(window.pollEvent(event)) {
 
-            if (event.type == Event::Closed) {
+            if (event.type == Event::Closed || Keyboard::isKeyPressed(Keyboard::Escape)) {
                 
                 window.close();
 
@@ -378,13 +382,13 @@ int main() {
         bool updated = false;
 
         if (Keyboard::isKeyPressed(Keyboard::D)) {
-            if (character.GetPosition().GetXF() + deltaTime*CHARACTER_SPEED + CHARACTER_SIZE * CHARACTER_SCALE_FACTOR - 1 <= WINDOW_WIDTH) {
+            if (character.GetPosition().GetXF() + deltaTime*CHARACTER_SPEED + CHARACTER_SIZE * CHARACTER_SCALE_FACTOR - 1 <= WORLD_WIDTH*TEXTURE_SIZE) {
                 character.Move(RIGHT, deltaTime);
                 if (updated == false) { 
                     CharacterAnimation.Update(2, deltaTime, true); 
                     updated = true;
                 }
-                if (CharacterView.getCenter().x + VIEW_WIDTH/2 + deltaTime*CHARACTER_SPEED <= WINDOW_WIDTH) {
+                if (CharacterView.getCenter().x + VIEW_WIDTH/2 + deltaTime*CHARACTER_SPEED <= WORLD_WIDTH*TEXTURE_SIZE) {
                     if (!(character.GetPosition().GetXF() + CHARACTER_SIZE*CHARACTER_SCALE_FACTOR/2 < CharacterView.getCenter().x)) {
                         CharacterView.move(deltaTime*CHARACTER_SPEED, 0.f);
                         window.setView(CharacterView);
@@ -396,13 +400,13 @@ int main() {
         } 
 
         if (Keyboard::isKeyPressed(Keyboard::S)) {
-            if (character.GetPosition().GetYF() + deltaTime*CHARACTER_SPEED + CHARACTER_SIZE * CHARACTER_SCALE_FACTOR - 1 <= WINDOW_HEIGHT) {
+            if (character.GetPosition().GetYF() + deltaTime*CHARACTER_SPEED + CHARACTER_SIZE * CHARACTER_SCALE_FACTOR - 1 <= WORLD_HEIGHT*TEXTURE_SIZE) {
                 character.Move(BOTTOM, deltaTime);
                 if (updated == false) {
                     CharacterAnimation.Update(2, deltaTime, LastFaceRight);
                     updated = true;
                 }
-                if (CharacterView.getCenter().y + VIEW_HEIGHT/2 + deltaTime*CHARACTER_SPEED <= WINDOW_HEIGHT) {
+                if (CharacterView.getCenter().y + VIEW_HEIGHT/2 + deltaTime*CHARACTER_SPEED <= WORLD_HEIGHT*TEXTURE_SIZE) {
                     if (!(character.GetPosition().GetYF() + CHARACTER_SIZE*CHARACTER_SCALE_FACTOR/2 < CharacterView.getCenter().y)) {
                         CharacterView.move(0.f, deltaTime*CHARACTER_SPEED);
                         window.setView(CharacterView);
@@ -458,8 +462,8 @@ int main() {
             }
         }
 
-        for (int i = 0; i < WINDOW_HEIGHT / TEXTURE_SIZE; i++) {
-            for (int j = 0; j < WINDOW_WIDTH / TEXTURE_SIZE; j++) {
+        for (int i = 0; i < WORLD_HEIGHT; i++) {
+            for (int j = 0; j < WORLD_WIDTH; j++) {
                 window.draw(GameField[i][j].GetSprite());
             }
         }
