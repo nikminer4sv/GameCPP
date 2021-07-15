@@ -1,5 +1,7 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+#include <SFML/System.hpp>
 #include <vector>
 #include <string>
 #include <stdlib.h>
@@ -16,6 +18,12 @@ Sprite CharacterSprite;
 vector<Sprite> GrassSprites(32);
 vector<Sprite> RoadSprites(32);
 Image icon;
+SoundBuffer WindBuffer;
+SoundBuffer WalkBuffer;
+SoundBuffer BuildBuffer;
+Sound WindSound;
+Sound WalkSound;
+Sound BuildSound;
 
 // Константы
 const int WINDOW_WIDTH = 1920;
@@ -27,7 +35,7 @@ const int WORLD_HEIGHT = 30;
 const int TEXTURE_SIZE = 32;
 const int CHARACTER_SIZE = 32;
 const int CHARACTER_SCALE_FACTOR = 2;
-const int CHARACTER_SPEED = 200;
+const int CHARACTER_SPEED = 160;
 const string WINDOW_TITLE = "Game";
 const string TEXTURES_PATH = "source/textures/";
 const bool isGenerator = true;
@@ -172,6 +180,10 @@ public:
         this->type = type;
     }
 
+    CellType GetType() {
+        return type;
+    }
+
 };
 
 // Загрузка ресурсов игры
@@ -201,6 +213,20 @@ void LoadSource() {
 
     // Загрузка иконки игры
     icon.loadFromFile("source/icons/GameIcon.png");
+
+    // Загрузка и конфигурация звуков ветра
+    WindBuffer.loadFromFile("source/audio/WindSound.wav");
+    WindSound.setBuffer(WindBuffer);
+    WindSound.setLoop(true);
+    WindSound.setVolume(7.f);
+    
+    // Загрузка и конфигурация звуков ветра
+    WalkBuffer.loadFromFile("source/audio/WalkSound.wav");
+    WalkSound.setBuffer(WalkBuffer);
+
+    // Загрузка и конфигурация звуков строительства
+    BuildBuffer.loadFromFile("source/audio/BuildSound.wav");
+    BuildSound.setBuffer(BuildBuffer);
 
 }
 
@@ -394,6 +420,8 @@ int main() {
     // Инициализация переменной, хранящей направление персонажа
     bool LastFaceRight = true;
 
+    // Запуск звука ветра на фоне
+    WindSound.play();
     // Создание главного цикла игры
     while(window.isOpen()) {
 
@@ -421,6 +449,31 @@ int main() {
                     current_road_type++;
                 }
             }
+
+            // Строительство
+            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left) {
+
+                if (isGenerator) {
+                    // Переменные строки и колонки игрового поля
+                    int col, row;
+
+                    // mapPixelToCoords - преобразование координат вьюпорта в глобальные
+                    col = window.mapPixelToCoords(Mouse::getPosition(window)).x / TEXTURE_SIZE;
+                    row = window.mapPixelToCoords(Mouse::getPosition(window)).y / TEXTURE_SIZE;
+
+                    // Проверка на повторяемость
+                    if (GameField[row][col].GetType() != ROAD) {
+
+                        // Замена клетки поля
+                        GameField[row][col].ChangeCell(RoadSprites[current_road_type], ROAD);     
+
+                        // Воспроизведение звука строительства
+                        BuildSound.play();
+
+                    }
+
+                }
+        }
 
         }
 
@@ -542,25 +595,6 @@ int main() {
             }
         }
 
-        // Строительство
-        if (isGenerator) {
-
-            // Проверка на нажатие левой кнопки мыши
-            if (Mouse::isButtonPressed(Mouse::Left)) {
-
-                // Переменные строки и колонки игрового поля
-                int col, row;
-
-                // mapPixelToCoords - преобразование координат вьюпорта в глобальные
-                col = window.mapPixelToCoords(Mouse::getPosition(window)).x / TEXTURE_SIZE;
-                row = window.mapPixelToCoords(Mouse::getPosition(window)).y / TEXTURE_SIZE;
-
-                // Замена клеток поля
-                GameField[row][col].ChangeCell(RoadSprites[current_road_type], ROAD);      
-
-            }
-        }
-
         // Отрисовка игрового мира
         for (int i = 0; i < WORLD_HEIGHT; i++) {
             for (int j = 0; j < WORLD_WIDTH; j++) {
@@ -571,6 +605,12 @@ int main() {
         // Проверка на то, стоит ли персонаж или двигается
         if (isMoving == false) {
             CharacterAnimation.Update(0, deltaTime, LastFaceRight);
+            if (WalkSound.getStatus() == Sound::Playing)
+                WalkSound.stop();
+        } else {
+            if (WalkSound.getStatus() != Sound::Playing) {
+                WalkSound.play();
+            }
         }
 
         // Обновление спрайта персонажа и его отрисовка
