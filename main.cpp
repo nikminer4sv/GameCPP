@@ -6,6 +6,7 @@
 #include <string>
 #include <stdlib.h>
 #include <ctime>
+#include <math.h>
 
 // Используемые пространства имен
 using namespace std;
@@ -24,6 +25,11 @@ SoundBuffer BuildBuffer;
 Sound WindSound;
 Sound WalkSound;
 Sound BuildSound;
+CircleShape arrow;
+
+// GUI
+Sprite RoadtypeBackground;
+Texture RoadtypeBackgroundTexture;
 
 // Константы
 const int WINDOW_WIDTH = 1920;
@@ -228,6 +234,13 @@ void LoadSource() {
     BuildBuffer.loadFromFile("source/audio/BuildSound.wav");
     BuildSound.setBuffer(BuildBuffer);
 
+    arrow.setRadius(1.f);
+
+    // GUI
+    RoadtypeBackgroundTexture.loadFromFile("source/GUI/RoadtypeBackground.png");
+    RoadtypeBackground.setTexture(RoadtypeBackgroundTexture);
+    RoadtypeBackground.setScale(0.25, 0.25);
+
 }
 
 // Класс персонажа
@@ -379,6 +392,93 @@ vector<vector<Cell>> DefaultMap() {
 
 }
 
+class ProjectTile {
+private:
+    Sprite sprite;
+    Position2D StartPosition;
+    Position2D CurrentPosition;
+    Position2D MousePosition;
+    CircleShape arrow;
+    int speed;
+    float sin;
+    float cos;
+
+public:
+    ProjectTile() {}
+
+    ProjectTile(Sprite sprite, Position2D StartPosition, Position2D MousePosition, int speed) {
+
+        this->sprite = sprite;
+        this->StartPosition = StartPosition;
+        this->MousePosition = MousePosition;
+        this->speed = speed;
+        sprite.setPosition(StartPosition.GetXF(), StartPosition.GetYF());
+        sin = abs(StartPosition.GetYF() - MousePosition.GetYF()) / abs(StartPosition.GetXF() - MousePosition.GetXF());
+        cos = abs(StartPosition.GetXF() - MousePosition.GetXF()) / abs(StartPosition.GetYF() - MousePosition.GetYF());
+
+    }
+
+    ProjectTile(Position2D StartPosition, Position2D MousePosition, int speed) {
+
+        arrow.setRadius(1.5);
+        //this->sprite = sprite;
+        this->StartPosition = StartPosition;
+        this->MousePosition = MousePosition;
+        this->speed = speed;
+        this->arrow.setPosition(StartPosition.GetXF(), StartPosition.GetYF());
+        this->CurrentPosition = StartPosition;
+        cout << "Position: " << arrow.getPosition().x << " " << arrow.getPosition().y;
+        float path = sqrt(pow(StartPosition.GetYF() - MousePosition.GetYF(), 2) + pow(StartPosition.GetXF() - MousePosition.GetXF(), 2));
+        sin = (StartPosition.GetYF() - MousePosition.GetYF()) / path;
+        cos = (StartPosition.GetXF() - MousePosition.GetXF()) / path;
+
+    }
+
+    void Update(float deltaTime) {
+
+        CurrentPosition.SetXF(CurrentPosition.GetXF() - speed * deltaTime * cos);
+        CurrentPosition.SetYF(CurrentPosition.GetYF() - speed * deltaTime * sin);
+
+        arrow.setPosition(CurrentPosition.GetXF(), CurrentPosition.GetYF());
+
+        //if (arrow.getPosition().x < 0 || arrow.getPosition().x > WORLD_HEIGHT*TEXTURE_SIZE || arrow.getPosition().y < 0 || arrow.getPosition().y > WORLD_HEIGHT*TEXTURE_SIZE) {
+            
+        //}
+
+    }
+
+    CircleShape GetSprite() {
+        return arrow;
+    }
+
+};
+
+class GUI {
+private:
+    vector<Sprite> GUIObjects;
+
+public:
+
+    GUI(int CurrentRoad) {
+
+        GUIObjects.push_back(RoadtypeBackground);
+        GUIObjects[0].setPosition(WINDOW_WIDTH - 10, WINDOW_HEIGHT - 10);
+        GUIObjects.push_back(RoadSprites[CurrentRoad]);
+        GUIObjects[1].setPosition(WINDOW_WIDTH - 28, WINDOW_HEIGHT - 28);
+        GUIObjects[1].scale(1.5, 1.5);
+
+    }
+
+    vector<Sprite> GetObjects() {
+        return GUIObjects;
+    }
+
+    void UpdateRoad(int CurrentRoad) {
+        GUIObjects[1].setTextureRect(RoadSprites[CurrentRoad].getTextureRect());
+    }
+
+};
+
 // Точка входа
 int main() {
 
@@ -404,7 +504,8 @@ int main() {
     RenderWindow window(VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), WINDOW_TITLE, Style::Fullscreen);
 
     // Конфигурация главного окна игры
-    window.setVerticalSyncEnabled(true);
+    //window.setVerticalSyncEnabled(true);
+    window.setFramerateLimit(61);
     window.setView(CharacterView);
     window.setIcon(512,512,icon.getPixelsPtr());
 
@@ -422,6 +523,10 @@ int main() {
 
     // Запуск звука ветра на фоне
     WindSound.play();
+
+    vector<ProjectTile> LiveProjectTiles(0);
+    GUI gui(current_road_type);
+
     // Создание главного цикла игры
     while(window.isOpen()) {
 
@@ -442,16 +547,19 @@ int main() {
                 window.close();
             
             // Смена типа дороги
-            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right) {
-                if (current_road_type + 1 == 32) {
+            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Middle) {
+
+                if (current_road_type + 1 == 32) 
                     current_road_type = 0;
-                } else {
+                else 
                     current_road_type++;
-                }
+
+                gui.UpdateRoad(current_road_type);
+                
             }
 
             // Строительство
-            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left) {
+            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right) {
 
                 if (isGenerator) {
                     // Переменные строки и колонки игрового поля
@@ -462,7 +570,7 @@ int main() {
                     row = window.mapPixelToCoords(Mouse::getPosition(window)).y / TEXTURE_SIZE;
 
                     // Проверка на повторяемость
-                    if (GameField[row][col].GetType() != ROAD) {
+                    if (GameField[row][col].GetSprite().getTextureRect() != RoadSprites[current_road_type].getTextureRect()) {
 
                         // Замена клетки поля
                         GameField[row][col].ChangeCell(RoadSprites[current_road_type], ROAD);     
@@ -472,8 +580,17 @@ int main() {
 
                     }
 
-                }
-        }
+                } 
+
+            }
+
+            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left){
+
+                Position2D CurrentPosition(character.GetPosition().GetXF() + CHARACTER_SIZE * CHARACTER_SCALE_FACTOR / 2, character.GetPosition().GetYF() + CHARACTER_SIZE * CHARACTER_SCALE_FACTOR / 2);
+                Position2D MousePosition((float)window.mapPixelToCoords(Mouse::getPosition(window)).x, (float)window.mapPixelToCoords(Mouse::getPosition(window)).y);
+                LiveProjectTiles.push_back(ProjectTile(CurrentPosition, MousePosition, 600));
+
+            }
 
         }
 
@@ -616,6 +733,23 @@ int main() {
         // Обновление спрайта персонажа и его отрисовка
         character.GetSpriteRef()->setTextureRect(CharacterAnimation.GetIntRect());
         window.draw(character.GetSprite());
+
+        for (int i = 0; i < LiveProjectTiles.size(); i++) {
+            LiveProjectTiles[i].Update(deltaTime);
+            window.draw(LiveProjectTiles[i].GetSprite());
+        }
+
+        vector<Sprite> GUIObjects = gui.GetObjects();
+        for (int i = 0; i < GUIObjects.size(); i++) {
+
+            Sprite temp = GUIObjects[i];
+            double x, y;
+            x = temp.getPosition().x / WINDOW_WIDTH;
+            y = temp.getPosition().y / WINDOW_HEIGHT;
+            temp.setPosition(CharacterView.getCenter().x - VIEW_WIDTH / 2 + VIEW_WIDTH * x - temp.getGlobalBounds().width, CharacterView.getCenter().y - VIEW_HEIGHT / 2 + VIEW_HEIGHT * y - temp.getGlobalBounds().height);
+            window.draw(temp);
+
+        }
 
         // Отрисовка окна
         window.display();
