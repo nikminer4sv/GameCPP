@@ -547,7 +547,7 @@ int main() {
                 window.close();
             
             // Смена типа дороги
-            if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Middle) {
+            if (Keyboard::isKeyPressed(Keyboard::Tab)) {
 
                 if (current_road_type + 1 == 32) 
                     current_road_type = 0;
