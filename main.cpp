@@ -464,7 +464,7 @@ public:
         GUIObjects.push_back(RoadtypeBackground);
         GUIObjects[0].setPosition(WINDOW_WIDTH - 10, WINDOW_HEIGHT - 10);
         GUIObjects.push_back(RoadSprites[CurrentRoad]);
-        GUIObjects[1].setPosition(WINDOW_WIDTH - 28, WINDOW_HEIGHT - 28);
+        GUIObjects[1].setPosition(WINDOW_WIDTH - 18, WINDOW_HEIGHT - 18);
         GUIObjects[1].scale(1.5, 1.5);
 
     }
@@ -744,9 +744,12 @@ int main() {
 
             Sprite temp = GUIObjects[i];
             double x, y;
-            x = temp.getPosition().x / WINDOW_WIDTH;
-            y = temp.getPosition().y / WINDOW_HEIGHT;
-            temp.setPosition(CharacterView.getCenter().x - VIEW_WIDTH / 2 + VIEW_WIDTH * x - temp.getGlobalBounds().width, CharacterView.getCenter().y - VIEW_HEIGHT / 2 + VIEW_HEIGHT * y - temp.getGlobalBounds().height);
+            //x = temp.getPosition().x / WINDOW_WIDTH;
+            //y = temp.getPosition().y / WINDOW_HEIGHT;
+            //temp.setPosition(CharacterView.getCenter().x - VIEW_WIDTH / 2 + VIEW_WIDTH * x - temp.getGlobalBounds().width, CharacterView.getCenter().y - VIEW_HEIGHT / 2 + VIEW_HEIGHT * y - temp.getGlobalBounds().height);
+            
+            temp.setPosition(CharacterView.getCenter().x + VIEW_WIDTH / 2 - WINDOW_WIDTH + temp.getPosition().x - temp.getGlobalBounds().width , CharacterView.getCenter().y + VIEW_HEIGHT / 2 - WINDOW_HEIGHT + temp.getPosition().y - temp.getGlobalBounds().height);
+            
             window.draw(temp);
 
         }
