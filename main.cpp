@@ -27,6 +27,8 @@ Texture GroundTileset;
 Texture ResourcesTileset;
 Texture ResourceBackgroundTexture;
 Texture StoneWallTileset;
+Texture BuildBackgroundTexture;
+Texture BuildButtonsTileset;
 Sprite CharacterSprite;
 Sprite ResourcesStoneSprite;
 Sprite ResourcesWoodSprite;
@@ -34,6 +36,11 @@ Sprite ResourcesGoldSprite;
 Sprite ResourcesIronSprite;
 Sprite ResourceBackgroundSprite;
 Sprite StoneWall_pillar;
+Sprite BuildBackgroundSprite;
+Sprite StoneWallBuildButton;
+Sprite StoneRoadBuildButton;
+Sprite StoneFloorBuildButton;
+Sprite EmptyBuildButton;
 vector<Sprite> StoneWallSprites(1);
 vector<Sprite> GrassSprites(32);
 vector<Sprite> RoadSprites(32);
@@ -78,10 +85,10 @@ const string AUDIO_PATH = "source/audio/";
 const string FONTS_PATH = "source/fonts/";
 const bool isGenerator = true;
 
-int WoodValue = 1;
+int WoodValue = 200;
 int StoneValue = 200;
-int IronValue = 3;
-int GoldValue = 4;
+int IronValue = 200;
+int GoldValue = 200;
 
 void LoadSource();
 int GetRandomNumber(int min, int max);
@@ -137,7 +144,6 @@ int main() {
     window.setFramerateLimit(61);
     window.setView(CharacterView);
     window.setIcon(512,512,icon.getPixelsPtr());
-    cout << CharacterView.getCenter().x << " " << CharacterView.getCenter().y;
 
     // Нужно для сохранение выбранного типа дороги для генератора
     int current_road_type = 0;  
@@ -561,6 +567,24 @@ void LoadSource() {
     GoldCounter.setString(to_string(GoldValue));
     GoldCounter.setScale(0.45,0.45);
 
+    BuildBackgroundTexture.loadFromFile(GUI_PATH + "BuildBackground.png");
+    BuildBackgroundSprite.setTexture(BuildBackgroundTexture);
+    BuildBackgroundSprite.setScale(1.5, 1.5);
+
+    BuildButtonsTileset.loadFromFile(GUI_PATH + "BuildButtons.png");
+    StoneWallBuildButton.setTexture(BuildButtonsTileset);
+    StoneWallBuildButton.setTextureRect(IntRect(0,0,20,20));
+    StoneWallBuildButton.setScale(1.5,1.5);
+    StoneFloorBuildButton.setTexture(BuildButtonsTileset);
+    StoneFloorBuildButton.setTextureRect(IntRect(20,0,20,20));
+    StoneFloorBuildButton.setScale(1.5,1.5);
+    StoneRoadBuildButton.setTexture(BuildButtonsTileset);
+    StoneRoadBuildButton.setTextureRect(IntRect(40,0,20,20));
+    StoneRoadBuildButton.setScale(1.5,1.5);
+    EmptyBuildButton.setTexture(BuildButtonsTileset);
+    EmptyBuildButton.setTextureRect(IntRect(60,0,20,20));
+    EmptyBuildButton.setScale(1.5,1.5);
+
     // StoneWall
     StoneWall.loadFromFile(TEXTURES_PATH + "StoneWall.png");
     StoneWallSprite.setTexture(StoneWall);
@@ -599,27 +623,42 @@ vector<vector<Cell>> DefaultMap() {
 
 GUI::GUI(int CurrentRoad) {
 
-    GUIObjects.push_back(RoadtypeBackground);
-    GUIObjects[0].setPosition(VIEW_WIDTH - 10 - GUIObjects[0].getGlobalBounds().width, VIEW_HEIGHT - 10 - GUIObjects[0].getGlobalBounds().height);
-    GUIObjects.push_back(RoadSprites[CurrentRoad]);
-    GUIObjects[1].scale(1.5, 1.5);
-    GUIObjects[1].setPosition(VIEW_WIDTH - 18 - GUIObjects[1].getGlobalBounds().width, VIEW_HEIGHT - 18 - GUIObjects[1].getGlobalBounds().height);
-    GUIObjects.push_back(ResourceBackgroundSprite);
-    GUIObjects[2].setPosition(5,5);
-    GUIObjects.push_back(ResourcesWoodSprite);
+    GUIObjects = vector<Sprite>(30);
+    //GUIObjects.push_back(RoadtypeBackground);
+    //GUIObjects[0].setPosition(VIEW_WIDTH - 10 - GUIObjects[0].getGlobalBounds().width, VIEW_HEIGHT - 10 - GUIObjects[0].getGlobalBounds().height);
+    //GUIObjects.push_back(RoadSprites[CurrentRoad]);
+    //GUIObjects[1].scale(1.5, 1.5);
+    //GUIObjects[1].setPosition(VIEW_WIDTH - 18 - GUIObjects[1].getGlobalBounds().width, VIEW_HEIGHT - 18 - GUIObjects[1].getGlobalBounds().height);
+    GUIObjects[0] = ResourceBackgroundSprite;
+    GUIObjects[0].setPosition(5,5);
+    GUIObjects[3] = ResourcesWoodSprite;
     GUIObjects[3].setPosition(6,6);
-    GUIObjects.push_back(ResourceBackgroundSprite);
+    GUIObjects[4] = ResourceBackgroundSprite;
     GUIObjects[4].setPosition(5,37);
-    GUIObjects.push_back(ResourcesStoneSprite);
+    GUIObjects[5] = ResourcesStoneSprite;
     GUIObjects[5].setPosition(6,38);
-    GUIObjects.push_back(ResourceBackgroundSprite);
+    GUIObjects[6] = ResourceBackgroundSprite;
     GUIObjects[6].setPosition(5,69);
-    GUIObjects.push_back(ResourcesIronSprite);
+    GUIObjects[7] = ResourcesIronSprite;
     GUIObjects[7].setPosition(6,70);
-    GUIObjects.push_back(ResourceBackgroundSprite);
+    GUIObjects[8] = ResourceBackgroundSprite;
     GUIObjects[8].setPosition(5,101);
-    GUIObjects.push_back(ResourcesGoldSprite);
+    GUIObjects[9] = ResourcesGoldSprite;
     GUIObjects[9].setPosition(6,102);
+    GUIObjects[10] = BuildBackgroundSprite;
+    GUIObjects[10].setPosition(VIEW_WIDTH - BuildBackgroundSprite.getGlobalBounds().width, VIEW_HEIGHT - BuildBackgroundSprite.getGlobalBounds().height);
+    GUIObjects[11] = StoneWallBuildButton;
+    GUIObjects[11].setPosition(GUIObjects[10].getPosition().x + 10.5, GUIObjects[10].getPosition().y + 7.5);
+    GUIObjects[12] = StoneFloorBuildButton;
+    GUIObjects[12].setPosition(GUIObjects[10].getPosition().x + 10.5 + 37.5, GUIObjects[10].getPosition().y + 7.5);
+    GUIObjects[13] = StoneRoadBuildButton;
+    GUIObjects[13].setPosition(GUIObjects[10].getPosition().x + 10.5 + 75, GUIObjects[10].getPosition().y + 7.5);
+    GUIObjects[14] = EmptyBuildButton;
+    GUIObjects[14].setPosition(GUIObjects[10].getPosition().x + 10.5, GUIObjects[10].getPosition().y + 42);
+    GUIObjects[15] = EmptyBuildButton;
+    GUIObjects[15].setPosition(GUIObjects[10].getPosition().x + 10.5 + 37.5, GUIObjects[10].getPosition().y + 42);
+    GUIObjects[16] = EmptyBuildButton;
+    GUIObjects[16].setPosition(GUIObjects[10].getPosition().x + 10.5 + 75, GUIObjects[10].getPosition().y + 42);
 
     TextObjects.push_back(WoodCounter);
     TextObjects[0].setPosition(33,11);
